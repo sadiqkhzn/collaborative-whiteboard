@@ -1,4 +1,4 @@
-require("dotenv").config({ path: "../.env" }); // Since server/ is one level below root
+require("dotenv").config({ path: "../.env" }); 
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
@@ -10,15 +10,20 @@ app.use(cors());
 app.use(express.json());
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000", 
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
 
-// Socket.IO handlers
 io.on("connection", (socket) => {
   console.log("A user connected");
 
   socket.on("joinRoom", (roomId) => {
     socket.join(roomId);
-    console.log(`User joined room: ${roomId}`); // ✅ FIXED: added backticks
+    console.log(`User joined room: ${roomId}`); 
   });
 
   socket.on("draw", ({ roomId, data }) => {
@@ -30,14 +35,12 @@ io.on("connection", (socket) => {
   });
 });
 
-// API routes
 app.get("/api/session/:roomId", async (req, res) => {
   const session = await Whiteboard.findOne({ where: { roomId: req.params.roomId } });
   if (!session) return res.status(404).send("Session not found");
   res.json(session);
 });
 
-// Add after your existing GET route
 app.post("/api/save", async (req, res) => {
   const { roomId, drawing } = req.body;
 
@@ -55,4 +58,10 @@ app.post("/api/save", async (req, res) => {
     console.error("Error saving whiteboard:", error);
     res.status(500).json({ error: "Failed to save whiteboard." });
   }
+});
+
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT, () => {
+  console.log(`✅ Server listening on http://localhost:${PORT}`);
 });

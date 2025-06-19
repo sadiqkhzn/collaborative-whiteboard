@@ -7,7 +7,7 @@ module.exports = (sequelize) => {
       primaryKey: true,
     },
     drawingData: {
-      type: DataTypes.TEXT, // stores base64 image or JSON
+      type: DataTypes.TEXT, 
     },
   });
 
