@@ -6,17 +6,25 @@ const { Server } = require("socket.io");
 const { Whiteboard } = require("../db");
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://collaborative-whiteboard-eight-delta.vercel.app',
+    'https://collaborative-whiteboard-git-main-sadiqkhzns-projects.vercel.app',
+    'https://collaborative-whiteboard-rgnptmjoh-sadiqkhzns-projects.vercel.app'
+  ],
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
+
 app.use(express.json());
 
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000", 
-    methods: ["GET", "POST"],
-    credentials: true
+    origin: "*", // or specific Vercel URLs
   }
 });
+
 
 io.on("connection", (socket) => {
   console.log("A user connected");

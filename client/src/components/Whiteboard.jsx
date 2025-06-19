@@ -5,9 +5,10 @@ import './Whiteboard.css';
 
 console.log("Connecting to:", process.env.REACT_APP_SERVER_URL); // Log the URL
 
-const socket = io(process.env.REACT_APP_SERVER_URL, {
-  transports: ["websocket"]
+const socket = io(import.meta.env.VITE_SERVER_URL, {
+  transports: ['websocket'],
 });
+
 
 export default function Whiteboard({ roomId }) {
   const canvasRef = useRef(null);
@@ -42,7 +43,7 @@ export default function Whiteboard({ roomId }) {
   useEffect(() => {
     const loadSavedDrawing = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/session/${roomId}`);
+        const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/session/${roomId}`);
         const data = await res.json();
         const img = new Image();
         img.onload = () => {
