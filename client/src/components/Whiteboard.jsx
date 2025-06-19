@@ -3,11 +3,11 @@ import { ChromePicker } from "react-color";
 import { io } from "socket.io-client";
 import './Whiteboard.css';
 
-console.log("Connecting to:", process.env.REACT_APP_SERVER_URL); // Log the URL
-
 const socket = io(import.meta.env.VITE_SERVER_URL, {
   transports: ['websocket'],
 });
+
+console.log("VITE_SERVER_URL:", import.meta.env.VITE_SERVER_URL);
 
 
 export default function Whiteboard({ roomId }) {
