@@ -43,7 +43,12 @@ export default function Whiteboard({ roomId }) {
   useEffect(() => {
     const loadSavedDrawing = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/session/${roomId}`);
+        const SERVER_URL = import.meta.env.VITE_SERVER_URL;
+        if (!SERVER_URL) {
+          console.error("Missing SERVER_URL");
+        } else {
+          const res = await fetch(`${SERVER_URL}/api/session/${roomId}`);
+        }
         const data = await res.json();
         const img = new Image();
         img.onload = () => {
