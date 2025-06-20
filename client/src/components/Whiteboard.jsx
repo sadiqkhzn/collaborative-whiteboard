@@ -121,19 +121,23 @@ useEffect(() => {
     setIsEraser(!isEraser);
   };
 
-const handleSave = () => {
-  const canvas = canvasRef.current;
-  const ctx = canvas.getContext("2d");
-  ctx.globalCompositeOperation = 'destination-over';
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const handleSave = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const tempCanvas = document.createElement("canvas");
+    const tempCtx = tempCanvas.getContext("2d");
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
 
-  const drawingData = canvas.toDataURL("image/png");
+    tempCtx.fillStyle = "#ffffff";
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-  socket.emit("save", { roomId, drawing: drawingData });
+    tempCtx.drawImage(canvas, 0, 0);
+    const drawingData = tempCanvas.toDataURL("image/png");
+    socket.emit("save", { roomId, drawing: drawingData });
+    alert("Saved!");
+  };
 
-  alert("Saved!");
-};
 
 
   return (
