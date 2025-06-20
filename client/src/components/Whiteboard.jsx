@@ -43,26 +43,28 @@ useEffect(() => {
   const loadSavedDrawing = async () => {
     try {
       const res = await fetch(`${process.env.REACT_APP_SERVER_URL}/api/session/${roomId}`);
-      if (!res.ok) {
-        console.warn("No saved drawing found.");
+      const data = await res.json();
+
+      if (!data.drawingData) {
+        console.warn("No saved drawing data.");
         return;
       }
 
-      const data = await res.json();
-      if (!data.drawingData) return;
+      console.log("🎨 Loading image:", data.drawingData.slice(0, 100));
 
       const img = new Image();
       img.onload = () => {
         const canvas = canvasRef.current;
         const ctx = canvas.getContext("2d");
-
-        // Clear existing drawing before rendering loaded image
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
       };
+      img.onerror = (err) => {
+        console.error("Image load failed:", err);
+      };
       img.src = data.drawingData;
     } catch (err) {
-      console.error("Error loading saved drawing:", err.message);
+      console.error("Fetch error:", err);
     }
   };
 
@@ -123,33 +125,34 @@ useEffect(() => {
 
 const handleSave = async () => {
   const canvas = canvasRef.current;
+
   const tempCanvas = document.createElement("canvas");
   const tempCtx = tempCanvas.getContext("2d");
 
   tempCanvas.width = canvas.width;
   tempCanvas.height = canvas.height;
 
-  // Force white background before drawing actual content
+  // Apply white background to avoid transparent PNG
   tempCtx.fillStyle = "#ffffff";
   tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
   tempCtx.drawImage(canvas, 0, 0);
 
   const drawingData = tempCanvas.toDataURL("image/png");
-  console.log("Saving drawing of size:", drawingData.length);
 
   try {
+    console.log("Generated Base64 Image:", drawingData.slice(0, 100)); // Just first 100 chars
+
     const res = await fetch(`${process.env.REACT_APP_SERVER_URL}/api/save`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ roomId, drawing: drawingData }),
     });
 
-    if (!res.ok) throw new Error("Failed to save drawing");
-
-    alert("✅ Drawing saved!");
+    if (!res.ok) throw new Error("Save failed");
+    alert("✅ Whiteboard saved!");
   } catch (err) {
-    console.error("❌ Error saving drawing:", err);
-    alert("❌ Failed to save drawing.");
+    console.error("Save error:", err);
+    alert("❌ Save failed.");
   }
 };
 

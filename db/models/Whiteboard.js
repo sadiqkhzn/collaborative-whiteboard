@@ -7,7 +7,8 @@ module.exports = (sequelize) => {
       primaryKey: true,
     },
     drawingData: {
-      type: DataTypes.TEXT, 
+      type: DataTypes.TEXT('long'),
+      allowNull: true, 
     },
   });
 

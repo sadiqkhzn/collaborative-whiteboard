@@ -44,29 +44,36 @@ io.on("connection", (socket) => {
 });
 
 app.get("/api/session/:roomId", async (req, res) => {
-  const session = await Whiteboard.findOne({ where: { roomId: req.params.roomId } });
-  if (!session) return res.status(404).send("Session not found");
-  res.json(session);
+  try {
+    const session = await Whiteboard.findOne({ where: { roomId: req.params.roomId } });
+
+    if (!session || !session.drawingData) {
+      return res.status(404).json({ error: "No saved drawing found." });
+    }
+
+    res.status(200).json({ drawingData: session.drawingData });
+  } catch (err) {
+    console.error("Error loading whiteboard:", err);
+    res.status(500).json({ error: "Error loading whiteboard." });
+  }
 });
 
 app.post("/api/save", async (req, res) => {
   const { roomId, drawing } = req.body;
 
-  if (!roomId || !drawing) {
-    return res.status(400).json({ error: "Missing roomId or drawing data." });
+  if (!roomId || !drawing || !drawing.startsWith("data:image")) {
+    return res.status(400).json({ error: "Invalid roomId or drawing data." });
   }
 
   try {
-    await Whiteboard.upsert({
-      roomId,
-      drawingData: drawing,
-    });
+    await Whiteboard.upsert({ roomId, drawingData: drawing });
     res.status(200).json({ message: "Whiteboard saved." });
   } catch (error) {
     console.error("Error saving whiteboard:", error);
     res.status(500).json({ error: "Failed to save whiteboard." });
   }
 });
+
 
 const PORT = process.env.PORT || 5000;
 
