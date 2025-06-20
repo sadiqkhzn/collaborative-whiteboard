@@ -3,12 +3,11 @@ import { ChromePicker } from "react-color";
 import { io } from "socket.io-client";
 import './Whiteboard.css';
 
-const socket = io(import.meta.env.VITE_SERVER_URL, {
+const socket = io(process.env.REACT_APP_SERVER_URL, {
   transports: ['websocket'],
 });
 
-console.log("VITE_SERVER_URL:", import.meta.env.VITE_SERVER_URL);
-
+console.log("REACT_APP_SERVER_URL:", process.env.REACT_APP_SERVER_URL);
 
 export default function Whiteboard({ roomId }) {
   const canvasRef = useRef(null);
@@ -41,21 +40,22 @@ export default function Whiteboard({ roomId }) {
 }, []);
 
   useEffect(() => {
-    const loadSavedDrawing = async () => {
-      try {
-        const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/session/${roomId}`);
-        const data = await res.json();
-        const img = new Image();
-        img.onload = () => {
-          const ctx = canvasRef.current.getContext("2d");
-          ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-          ctx.drawImage(img, 0, 0);
-        };
-        img.src = data.drawingData;
-      } catch (err) {
-        console.log("No saved session or failed to load:", err.message);
-      }
+const loadSavedDrawing = async () => {
+  try {
+    const res = await fetch(`${process.env.REACT_APP_SERVER_URL}/api/session/${roomId}`);
+    const data = await res.json();
+    const img = new Image();
+    img.onload = () => {
+      const ctx = canvasRef.current.getContext("2d");
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      ctx.drawImage(img, 0, 0);
     };
+    img.src = data.drawingData;
+  } catch (err) {
+    console.log("No saved session or failed to load:", err.message);
+  }
+};
+
 
     loadSavedDrawing();
   }, [roomId]);
