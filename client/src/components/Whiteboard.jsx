@@ -42,27 +42,27 @@ export default function Whiteboard({ roomId }) {
 useEffect(() => {
   const loadSavedDrawing = async () => {
     try {
-      const res = await fetch(`https://collaborative-whiteboard-auvd.onrender.com/api/session/${roomId}`);
-      const data = await res.json();
-
-      if (!data.drawingData) {
-        console.warn("No drawing data found for this session.");
+      const res = await fetch(`${process.env.REACT_APP_SERVER_URL}/api/session/${roomId}`);
+      if (!res.ok) {
+        console.warn("No saved drawing found.");
         return;
       }
+
+      const data = await res.json();
+      if (!data.drawingData) return;
 
       const img = new Image();
       img.onload = () => {
         const canvas = canvasRef.current;
         const ctx = canvas.getContext("2d");
+
+        // Clear existing drawing before rendering loaded image
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
       };
-      img.onerror = (err) => {
-        console.error("Image failed to load:", err);
-      };
       img.src = data.drawingData;
     } catch (err) {
-      console.error("Error loading saved session:", err.message);
+      console.error("Error loading saved drawing:", err.message);
     }
   };
 
@@ -121,41 +121,38 @@ useEffect(() => {
     setIsEraser(!isEraser);
   };
 
-  const handleSave = async () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+const handleSave = async () => {
+  const canvas = canvasRef.current;
+  const tempCanvas = document.createElement("canvas");
+  const tempCtx = tempCanvas.getContext("2d");
 
-    const ctx = canvas.getContext("2d");
+  tempCanvas.width = canvas.width;
+  tempCanvas.height = canvas.height;
 
-    const tempCanvas = document.createElement("canvas");
-    const tempCtx = tempCanvas.getContext("2d");
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
+  // Force white background before drawing actual content
+  tempCtx.fillStyle = "#ffffff";
+  tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+  tempCtx.drawImage(canvas, 0, 0);
 
-    tempCtx.fillStyle = "#ffffff";
-    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-    tempCtx.drawImage(canvas, 0, 0);
+  const drawingData = tempCanvas.toDataURL("image/png");
+  console.log("Saving drawing of size:", drawingData.length);
 
-    const drawingData = tempCanvas.toDataURL("image/png");
+  try {
+    const res = await fetch(`${process.env.REACT_APP_SERVER_URL}/api/save`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId, drawing: drawingData }),
+    });
 
-    try {
-      socket.emit("save", { roomId, drawing: drawingData }); 
-      const response = await fetch(`${process.env.REACT_APP_SERVER_URL}/api/save`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ roomId, drawing: drawingData }),
-      });
+    if (!res.ok) throw new Error("Failed to save drawing");
 
-      if (!response.ok) throw new Error("Save failed.");
+    alert("✅ Drawing saved!");
+  } catch (err) {
+    console.error("❌ Error saving drawing:", err);
+    alert("❌ Failed to save drawing.");
+  }
+};
 
-      alert("✅ Drawing saved to database!");
-    } catch (error) {
-      console.error("❌ Save failed:", error.message);
-      alert("❌ Save failed. Check console.");
-    }
-  };
 
   return (
     <div
