@@ -39,26 +39,36 @@ export default function Whiteboard({ roomId }) {
   });
 }, []);
 
-  useEffect(() => {
-const loadSavedDrawing = async () => {
-  try {
-    const res = await fetch(`${process.env.REACT_APP_SERVER_URL}/api/session/${roomId}`);
-    const data = await res.json();
-    const img = new Image();
-    img.onload = () => {
-      const ctx = canvasRef.current.getContext("2d");
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-      ctx.drawImage(img, 0, 0);
-    };
-    img.src = data.drawingData;
-  } catch (err) {
-    console.log("No saved session or failed to load:", err.message);
-  }
-};
+useEffect(() => {
+  const loadSavedDrawing = async () => {
+    try {
+      const res = await fetch(`https://collaborative-whiteboard-auvd.onrender.com/api/session/${roomId}`);
+      const data = await res.json();
 
+      if (!data.drawingData) {
+        console.warn("No drawing data found for this session.");
+        return;
+      }
 
-    loadSavedDrawing();
-  }, [roomId]);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+      };
+      img.onerror = (err) => {
+        console.error("Image failed to load:", err);
+      };
+      img.src = data.drawingData;
+    } catch (err) {
+      console.error("Error loading saved session:", err.message);
+    }
+  };
+
+  loadSavedDrawing();
+}, [roomId]);
+
 
   const drawLine = ({ x0, y0, x1, y1, color, thickness }) => {
     const ctx = canvasRef.current.getContext("2d");
@@ -111,14 +121,20 @@ const loadSavedDrawing = async () => {
     setIsEraser(!isEraser);
   };
 
-  const handleSave = () => {
-    const canvas = canvasRef.current;
-    const drawingData = canvas.toDataURL();
+const handleSave = () => {
+  const canvas = canvasRef.current;
+  const ctx = canvas.getContext("2d");
+  ctx.globalCompositeOperation = 'destination-over';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    socket.emit("save", { roomId, drawing: drawingData });
+  const drawingData = canvas.toDataURL("image/png");
 
-    alert("Saved!");
-  };
+  socket.emit("save", { roomId, drawing: drawingData });
+
+  alert("Saved!");
+};
+
 
   return (
     <div
