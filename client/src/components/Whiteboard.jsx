@@ -121,9 +121,12 @@ useEffect(() => {
     setIsEraser(!isEraser);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
+
     const ctx = canvas.getContext("2d");
+
     const tempCanvas = document.createElement("canvas");
     const tempCtx = tempCanvas.getContext("2d");
     tempCanvas.width = canvas.width;
@@ -131,14 +134,28 @@ useEffect(() => {
 
     tempCtx.fillStyle = "#ffffff";
     tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
     tempCtx.drawImage(canvas, 0, 0);
+
     const drawingData = tempCanvas.toDataURL("image/png");
-    socket.emit("save", { roomId, drawing: drawingData });
-    alert("Saved!");
+
+    try {
+      socket.emit("save", { roomId, drawing: drawingData }); 
+      const response = await fetch(`${process.env.REACT_APP_SERVER_URL}/api/save`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ roomId, drawing: drawingData }),
+      });
+
+      if (!response.ok) throw new Error("Save failed.");
+
+      alert("✅ Drawing saved to database!");
+    } catch (error) {
+      console.error("❌ Save failed:", error.message);
+      alert("❌ Save failed. Check console.");
+    }
   };
-
-
 
   return (
     <div
