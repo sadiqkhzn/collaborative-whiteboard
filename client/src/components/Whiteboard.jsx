@@ -16,12 +16,19 @@ export default function Whiteboard({ roomId }) {
   const [isDrawing, setIsDrawing] = useState(false);
   const [prevPoint, setPrevPoint] = useState(null);
   const [isEraser, setIsEraser] = useState(false);
+  const [tool, setTool] = useState("rectangle");
 
+  
+  <button onClick={() => setTool("rectangle")}>Rectangle </button>>
   useEffect(() => {
     socket.emit("joinRoom", roomId);
 
     socket.on("draw", (data) => {
-      drawLine(data);
+      if(data.type === "rectangle"){
+        drawRect(data);
+      } else {
+        drawLine(data);
+      }
     });
 
     return () => {
@@ -91,7 +98,13 @@ useEffect(() => {
     };
   };
 
+  const [startRect, setStartRect] = useState(null);
+
   const handleMouseDown = (e) => {
+    const point = getMousePos(e);
+    if(tool === "rectangle"){
+      setStartRect(point);
+    }
     setIsDrawing(true);
     setPrevPoint(getMousePos(e));
   };
@@ -114,7 +127,29 @@ useEffect(() => {
     }
   };
 
-  const handleMouseUp = () => {
+  const drawRect = ({x, y, width, height, color, thickness}) => {
+    const ctx = canvasRef.current.getContext("2d");
+    ctx.strokeStyle = color;
+    ctx.lineWidth = thickness;
+    ctx.strokeRect(x, y, width, height);
+  }
+
+  const handleMouseUp = (e) => {
+    const endPoint = getMousePos(e);
+    if(tool === "rectangle" && startRect){
+      const rect = {
+        x: Math.min(startRect.x, endPoint.x),
+        y: Math.min(startRect.y, endPoint.y),
+        width : Math.min(startRect.x - endPoint.x),
+        height : Math.min(startRect.y - endPoint.y),
+        color, 
+        thickness,
+        type: "rectangle"
+      };
+      drawRect(rect);
+      socket.emit("draw", {roomId, data: rect});
+      setStartRect(null);
+    }
     setIsDrawing(false);
     setPrevPoint(null);
   };
